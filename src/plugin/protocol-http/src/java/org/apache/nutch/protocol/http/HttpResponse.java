@@ -120,22 +120,28 @@ public class HttpResponse implements Response {
 
     try {
       socket = new Socket(); // create the socket
+      Http.LOG.info("socket1");
       socket.setSoTimeout(http.getTimeout());
+      Http.LOG.info("socket2");
 
       // connect
       String sockHost = http.useProxy(url) ? http.getProxyHost() : host;
       int sockPort = http.useProxy(url) ? http.getProxyPort() : port;
       InetSocketAddress sockAddr = new InetSocketAddress(sockHost, sockPort);
+      Http.LOG.info("socket3 " + sockAddr);
       socket.connect(sockAddr, http.getTimeout());
+      Http.LOG.info("socket4");
 
       if (scheme == Scheme.HTTPS) {
         SSLSocket sslsocket = null;
-
+        Http.LOG.info("ssl1");
         try {
           sslsocket = getSSLSocket(socket, sockHost, sockPort);
+          Http.LOG.info("ssl2");
           sslsocket.startHandshake();
+          Http.LOG.info("ssl4");
         } catch (Exception e) {
-          Http.LOG.debug("SSL connection to {} failed with: {}", url,
+          Http.LOG.info("ssl5 SSL connection to {} failed with: {}", url,
               e.getMessage());
           if ("handshake alert:  unrecognized_name".equals(e.getMessage())) {
             try {
@@ -146,21 +152,25 @@ public class HttpResponse implements Response {
               sslsocket = getSSLSocket(socket, "", sockPort);
               sslsocket.startHandshake();
             } catch (Exception ex) {
+              Http.LOG.warn("ssl6 can't reconnect", ex);
               String msg = "SSL reconnect to " + url + " failed with: "
                   + e.getMessage();
               throw new HttpException(msg);
             }
           }
         }
+        Http.LOG.warn("ssl7 setting " + sslsocket);
         socket = sslsocket;
       }
 
       if (http.isStoreIPAddress()) {
         headers.add("_ip_", sockAddr.getAddress().getHostAddress());
       }
+      Http.LOG.warn("ssl8");
 
       // make request
       OutputStream req = socket.getOutputStream();
+      Http.LOG.warn("ssl9");
 
       StringBuffer reqStr = new StringBuffer("GET ");
       if (http.useProxy(url)) {
