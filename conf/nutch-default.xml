@@ -1735,6 +1735,15 @@ CAUTION: Set the parser.timeout to -1 or a bigger value than 30, when using this
   the parsing to crash because of a very long or corrupted document.
   </description>
 </property>
+<property>
+  <name>parser.ignore.parse.exceptions</name>
+  <value>false</value>
+  <description>If set to true, the parser catches parse exceptions but processes the document
+  as if it were a parse success. The parser should add a "parse.exception=true" metadata flag
+  to the parse. The parser should also add the stack trace to the metadata "parse.exception.stacktrace".
+  This allows Nutch to pass through metadata to the index whether or not there was
+  a parse exception. NOTE: this is only currently implemented by the Tika parser.</description>
+</property>
 
 <property>
   <name>parse.filter.urls</name>

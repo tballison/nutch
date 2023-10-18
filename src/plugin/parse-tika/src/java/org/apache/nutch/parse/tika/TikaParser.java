@@ -55,6 +55,8 @@ import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.Link;
 import org.apache.tika.sax.LinkContentHandler;
 import org.apache.tika.sax.TeeContentHandler;
+import org.apache.tika.utils.ExceptionUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
@@ -80,6 +82,7 @@ public class TikaParser implements org.apache.nutch.parse.Parser {
   private boolean useBoilerpipe;
   private String boilerpipeExtractorName;
   private Set<String> boilerpipeMimeTypes;
+  private boolean ignoreParseExceptions = false;
 
   @Override
   public ParseResult getParse(Content content) {
@@ -150,10 +153,15 @@ public class TikaParser implements org.apache.nutch.parse.Parser {
     try {
       parser.parse(new ByteArrayInputStream(raw),
           (ContentHandler) teeContentHandler, tikamd, context);
+      tikamd.set("parse.exception", "false");
     } catch (Exception e) {
       LOG.error("Error parsing " + content.getUrl(), e);
-      return new ParseStatus(ParseStatus.FAILED, e.getMessage())
-          .getEmptyParseResult(content.getUrl(), getConf());
+      if (ignoreParseExceptions) {
+        tikamd.set("parse.exception.stacktrace", ExceptionUtils.getStackTrace(e));
+      } else {
+        return new ParseStatus(ParseStatus.FAILED,
+                e.getMessage()).getEmptyParseResult(content.getUrl(), getConf());
+      }
     }
 
     HTMLMetaTags metaTags = new HTMLMetaTags();
@@ -324,6 +332,7 @@ public class TikaParser implements org.apache.nutch.parse.Parser {
         .asList(conf.getTrimmedStrings("tika.extractor.boilerpipe.mime.types",
             "text/html", "application/xhtml+xml")));
     parseEmbedded = conf.getBoolean("tika.parse.embedded", true);
+    ignoreParseExceptions = conf.getBoolean("parser.ignore.parse.exceptions", false);
   }
 
   @Override
